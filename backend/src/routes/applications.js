@@ -1,8 +1,25 @@
 const express = require('express');
+const path = require('path');
+const fs = require('fs').promises;
 const { runQuery, getOne, getAll } = require('../models/database');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
+const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads');
+
+// Helper to delete a file if it exists
+async function deleteFileIfExists(filename) {
+  if (!filename) return;
+  try {
+    const filepath = path.join(UPLOAD_DIR, filename);
+    await fs.unlink(filepath);
+  } catch (err) {
+    // File might not exist, ignore error
+    if (err.code !== 'ENOENT') {
+      console.error(`Failed to delete file ${filename}:`, err);
+    }
+  }
+}
 
 // Check for duplicate application (same company in last 2 weeks)
 router.get('/check-duplicate', authMiddleware, async (req, res) => {
@@ -212,14 +229,29 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // Delete application
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const result = await runQuery(
-      'DELETE FROM applications WHERE id = ? AND user_id = ?',
+    // First, fetch the application to get file paths
+    const application = await getOne(
+      'SELECT * FROM applications WHERE id = ? AND user_id = ?',
       [req.params.id, req.user.id]
     );
 
-    if (result.changes === 0) {
+    if (!application) {
       return res.status(404).json({ error: 'Application not found' });
     }
+
+    // Delete associated files from storage
+    await Promise.all([
+      deleteFileIfExists(application.cv_doc_path),
+      deleteFileIfExists(application.cv_pdf_path),
+      deleteFileIfExists(application.cover_letter_doc_path),
+      deleteFileIfExists(application.cover_letter_pdf_path)
+    ]);
+
+    // Delete the database record
+    await runQuery(
+      'DELETE FROM applications WHERE id = ? AND user_id = ?',
+      [req.params.id, req.user.id]
+    );
 
     res.json({ message: 'Application deleted successfully' });
   } catch (error) {

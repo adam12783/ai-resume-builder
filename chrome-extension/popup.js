@@ -361,6 +361,7 @@ function scrapeJobDescription() {
 
   let jobDescription = '';
   let jobTitle = '';
+  let companyName = '';
 
   // Try to find job title
   const titleSelectors = [
@@ -375,6 +376,47 @@ function scrapeJobDescription() {
     const el = document.querySelector(selector);
     if (el && el.textContent.trim()) {
       jobTitle = el.textContent.trim();
+      break;
+    }
+  }
+
+  // Try to find company name
+  const companySelectors = [
+    // LinkedIn
+    '.jobs-unified-top-card__company-name',
+    '.jobs-unified-top-card__company-name a',
+    '.job-details-jobs-unified-top-card__company-name',
+    '.job-details-jobs-unified-top-card__company-name a',
+    // Indeed
+    '.jobsearch-InlineCompanyRating-companyHeader',
+    '[data-testid="inlineHeader-companyName"]',
+    '.jobsearch-CompanyInfoContainer a',
+    // Glassdoor
+    '.css-87uc0g',
+    '.employer-name',
+    '[data-test="employer-name"]',
+    // Monster
+    '.company-name',
+    // ZipRecruiter
+    '.hiring_company_text',
+    // Workday
+    '[data-automation-id="jobPostingCompanyName"]',
+    // Greenhouse
+    '.company-name',
+    // Lever
+    '.posting-categories .sort-by-time',
+    // Generic
+    '[class*="company-name"]',
+    '[class*="companyName"]',
+    '[class*="employer"]',
+    '[data-company]',
+    '.company'
+  ];
+
+  for (const selector of companySelectors) {
+    const el = document.querySelector(selector);
+    if (el && el.textContent.trim()) {
+      companyName = el.textContent.trim();
       break;
     }
   }
@@ -397,7 +439,7 @@ function scrapeJobDescription() {
   // Clean up whitespace
   jobDescription = jobDescription.replace(/\s+/g, ' ').trim();
 
-  return { jobDescription, jobTitle };
+  return { jobDescription, jobTitle, companyName };
 }
 
 // Update generate button state
