@@ -157,7 +157,7 @@ function setupEventListeners() {
   document.getElementById('scrapeBtn').addEventListener('click', handleScrape);
 
   // Generate button
-  document.getElementById('generateBtn').addEventListener('click', handleGenerate);
+  document.getElementById('generateBtn').addEventListener('click', () => handleGenerate(false));
 
   // Manual JD input
   document.getElementById('manualJd').addEventListener('input', (e) => {
