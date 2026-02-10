@@ -27,8 +27,21 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Static files for CV downloads
-app.use('/uploads', express.static(uploadDir));
+// Helper to sanitize and strip UUID from filename for download
+function getCleanDownloadFilename(filename) {
+  // Remove UUID pattern (e.g., John_Doe_Resume_a1b2c3d4-e5f6-7890-abcd-ef1234567890.pdf)
+  // UUID pattern: 8-4-4-4-12 hex characters
+  const uuidPattern = /_[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i;
+  return filename.replace(uuidPattern, '');
+}
+
+// Static files for CV downloads with Content-Disposition header
+app.use('/uploads', (req, res, next) => {
+  const filename = path.basename(req.path);
+  const cleanFilename = getCleanDownloadFilename(filename);
+  res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
+  next();
+}, express.static(uploadDir));
 
 // Routes
 app.use('/api/auth', authRoutes);
